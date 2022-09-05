@@ -1,4 +1,4 @@
-[submodule "src/SUV-Tools"]
-	path = src/SUV-Tools
+[submodule "src/px4_msgs"]
+	path = src/px4_msgs
 	url = https://github.com/SUV-Olympiad/px4_msgs.git
 	branch = olympiad
