@@ -64,6 +64,7 @@ async def run(drone_num, drone_type):
     dataset = pandas.read_csv(path, header=None)
     lat = float(dataset.loc[row][0])
     lon = float(dataset.loc[row][1])
+    mission_items.append(make_mission_items(start_position[0], start_position[1]))
     mission_items.append(make_mission_items(lat, lon))
     mission_plan = MissionPlan(mission_items)
 
@@ -128,6 +129,10 @@ async def give_random_mission(drone, drone_type, drone_num, prev_mission_group, 
     dataset = pandas.read_csv(path, header=None)
     lat = float(dataset.loc[row][0])
     lon = float(dataset.loc[row][1])
+    async for position in drone.telemetry.position():
+        takeoff_position = (float(position.latitude_deg), float(position.longitude_deg))
+        break
+    mission_items.append(make_mission_items(takeoff_position[0], takeoff_position[1]))
     mission_items.append(make_mission_items(lat, lon))
     mission_plan = MissionPlan(mission_items)
     print(f"-- Uploading mission to drone {drone_num} (to point{point[dst]}({lat}, {lon}) line num {row} was at {prev_mission_group})")
@@ -142,7 +147,7 @@ async def give_random_mission(drone, drone_type, drone_num, prev_mission_group, 
 def make_mission_items(lat, lon):
     return MissionItem(lat,
                        lon,
-                       10,
+                       305,
                        100,
                        True,
                        float('nan'),
