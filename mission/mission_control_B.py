@@ -9,7 +9,8 @@ import pandas
 
 from multiprocessing import Process
 from mavsdk import System
-from mavsdk.mission import (MissionItem, MissionPlan)
+from mavsdk.mission_raw import MissionItem
+
 
 async def run(drone_num, drone_type):
     drone = System(None, 50061+drone_num)
@@ -60,16 +61,17 @@ async def run(drone_num, drone_type):
 
     path = f"./conf/dst_{point[dst]}.csv"
     row = random.randint(0, 3)
-    # print(f'reading {path}... {row}')
     dataset = pandas.read_csv(path, header=None)
     lat = float(dataset.loc[row][0])
     lon = float(dataset.loc[row][1])
-    mission_items.append(make_mission_items(start_position[0], start_position[1]))
-    mission_items.append(make_mission_items(lat, lon))
-    mission_plan = MissionPlan(mission_items)
+
+    await drone.mission_raw.clear_mission()
+
+    mission_items.append(make_takeoff_mission(start_position[0], start_position[1]))
+    mission_items.append(make_land_mission(1, lat, lon))
 
     print(f"-- Uploading mission to drone {drone_num} (to point{point[dst]} line num {row} ({lat}, {lon})was at {start_point})")
-    await drone.mission.upload_mission(mission_plan)
+    await drone.mission_raw.upload_mission(mission_items)
 
     async for in_air in drone.telemetry.in_air():
         await asyncio.sleep(0.01)
@@ -89,27 +91,21 @@ async def run(drone_num, drone_type):
 
 
 async def land_disarm(drone, drone_num, drone_type, prev_mission_group, point):
-    while True:
-        if await drone.mission.is_mission_finished():
-            print(f"drone {drone_num} mission finished. send landing command")
-            await drone.action.land()
-
-            async for in_air in drone.telemetry.in_air():
-                await asyncio.sleep(0.01)
-                if not in_air:
-                    break
-
-            await drone.action.disarm()
-            entries = await drone.log_files.get_entries()
-            await download_log(drone, entries[-1], drone_num)
-            return await give_random_mission(drone, drone_type, drone_num, prev_mission_group, point)
+    async for in_air in drone.telemetry.in_air():
         await asyncio.sleep(0.01)
+        if not in_air:
+            print(f"drone {drone_num} mission finished")
+            break
+
+    entries = await drone.log_files.get_entries()
+    await download_log(drone, entries[-1], drone_num)
+    return await give_random_mission(drone, drone_type, drone_num, prev_mission_group, point)
 
 
 async def download_log(drone, entry, drone_num):
     date_without_colon = entry.date.replace(":", "-")
     filename = f"./log/B/{drone_num}-{date_without_colon}.ulog"
-    print(f"Downloading: log {entry.id} from {entry.date} to {filename}")
+    print(f"drone {drone_num} Downloading: log {entry.id} from {entry.date} to {filename}")
     await drone.log_files.download_log_file(entry, filename)
     print(f"drone {drone_num} log Download complete")
     await drone.log_files.erase_all_log_files()
@@ -132,32 +128,64 @@ async def give_random_mission(drone, drone_type, drone_num, prev_mission_group, 
     async for position in drone.telemetry.position():
         takeoff_position = (float(position.latitude_deg), float(position.longitude_deg))
         break
-    mission_items.append(make_mission_items(takeoff_position[0], takeoff_position[1]))
-    mission_items.append(make_mission_items(lat, lon))
-    mission_plan = MissionPlan(mission_items)
-    print(f"-- Uploading mission to drone {drone_num} (to point{point[dst]}({lat}, {lon}) line num {row} was at {prev_mission_group})")
-    await drone.mission.upload_mission(mission_plan)
 
-    await drone.action.arm()
-    await drone.mission.start_mission()
+    await drone.mission_raw.clear_mission()
+
+    mission_items.append(make_takeoff_mission(takeoff_position[0], takeoff_position[1]))
+    mission_items.append(make_land_mission(1, lat, lon))
+
+    print(f"-- Uploading mission to drone {drone_num} (to point{point[dst]}({lat}, {lon}) line num {row} was at {prev_mission_group})")
+    await drone.mission_raw.upload_mission(mission_items)
 
     return point[dst]
 
 
-def make_mission_items(lat, lon):
-    return MissionItem(lat,
-                       lon,
-                       305,
-                       100,
-                       True,
-                       float('nan'),
-                       float('nan'),
-                       MissionItem.CameraAction.NONE,
-                       float('nan'),
-                       float('nan'),
-                       float('nan'),
-                       float('nan'),
-                       float('nan'))
+def make_takeoff_mission(lat, lon, alt=360):
+    return MissionItem(seq=0,
+                       frame=0,
+                       command=22,
+                       current=1,
+                       autocontinue=1,
+                       param1=0.0,
+                       param2=0.0,
+                       param3=0.0,
+                       param4=float('nan'),
+                       x=int(lat * 10 ** 7),
+                       y=int(lon * 10 ** 7),
+                       z=alt,
+                       mission_type=0)
+
+
+def make_waypoint_mission(seq, lat, lon, alt=360):
+    return MissionItem(seq=seq,
+                       frame=0,
+                       command=16,
+                       current=0,
+                       autocontinue=1,
+                       param1=0.0,
+                       param2=0.0,
+                       param3=0.0,
+                       param4=float('nan'),
+                       x=int(lat * 10 ** 7),
+                       y=int(lon * 10 ** 7),
+                       z=alt,
+                       mission_type=0)
+
+
+def make_land_mission(seq, lat, lon, alt=360):
+    return MissionItem(seq=seq,
+                       frame=0,
+                       command=21,
+                       current=0,
+                       autocontinue=1,
+                       param1=0.0,
+                       param2=0.0,
+                       param3=0.0,
+                       param4=float('nan'),
+                       x=int(lat * 10 ** 7),
+                       y=int(lon * 10 ** 7),
+                       z=alt,
+                       mission_type=0)
 
 
 def is_inside(bl, tr, p):
@@ -175,6 +203,7 @@ async def check_in_air(drone):
 def main(drone_num, drone_type):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(run(drone_num, drone_type))
+
 
 if __name__ == "__main__":
     drone_type = 'iris'
