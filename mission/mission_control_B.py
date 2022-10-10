@@ -60,7 +60,7 @@ async def run(drone_num, drone_type):
         await asyncio.sleep(0.001)
 
     path = f"./conf/dst_{point[dst]}.csv"
-    row = random.randint(0, 3)
+    row = drone_num + 7
     dataset = pandas.read_csv(path, header=None)
     lat = float(dataset.loc[row][0])
     lon = float(dataset.loc[row][1])
@@ -121,7 +121,7 @@ async def give_random_mission(drone, drone_type, drone_num, prev_mission_group, 
         await asyncio.sleep(0.001)
 
     path = f"./conf/dst_{point[dst]}.csv"
-    row = random.randint(0, 3)
+    row = drone_num + 7
     dataset = pandas.read_csv(path, header=None)
     lat = float(dataset.loc[row][0])
     lon = float(dataset.loc[row][1])
