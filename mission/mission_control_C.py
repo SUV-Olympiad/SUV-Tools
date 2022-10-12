@@ -68,6 +68,7 @@ async def run(drone_num, drone_type):
     await drone.mission_raw.clear_mission()
 
     mission_items.append(make_takeoff_mission(start_position[0], start_position[1]))
+    mission_items.append(make_waypoint_mission(1, lat, lon))
     mission_items.append(make_land_mission(1, lat, lon))
 
     print(f"-- Uploading mission to drone {drone_num} (to point{point[dst]} line num {row} ({lat}, {lon})was at {start_point})")
@@ -97,6 +98,7 @@ async def land_disarm(drone, drone_num, drone_type, prev_mission_group, point):
             print(f"drone {drone_num} mission finished")
             break
 
+    await drone.mission_raw.clear_mission()
     entries = await drone.log_files.get_entries()
     await download_log(drone, entries[-1], drone_num)
     return await give_random_mission(drone, drone_type, drone_num, prev_mission_group, point)
@@ -129,9 +131,9 @@ async def give_random_mission(drone, drone_type, drone_num, prev_mission_group, 
         takeoff_position = (float(position.latitude_deg), float(position.longitude_deg))
         break
 
-    await drone.mission_raw.clear_mission()
 
     mission_items.append(make_takeoff_mission(takeoff_position[0], takeoff_position[1]))
+    mission_items.append(make_waypoint_mission(1, lat, lon))
     mission_items.append(make_land_mission(1, lat, lon))
 
     print(f"-- Uploading mission to drone {drone_num} (to point{point[dst]}({lat}, {lon}) line num {row} was at {prev_mission_group})")
