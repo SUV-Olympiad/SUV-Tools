@@ -11,7 +11,7 @@ class CmdPublisher(Node):
     def __init__(self):
         super().__init__('px4_command_publisher')
 
-        self._NUM = 20
+        self._NUM = 3
 
         self._pub = []
         self.position_sub = [None] * self._NUM

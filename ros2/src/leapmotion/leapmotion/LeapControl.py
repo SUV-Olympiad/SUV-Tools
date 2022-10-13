@@ -3,7 +3,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
-from suv_msg.msg import Leap
+from suv_msgs.msg import Leap
 
 class LeapPublisher(Node):
 
