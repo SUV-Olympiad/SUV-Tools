@@ -4,6 +4,8 @@ import asyncio
 import sys
 import csv
 import random
+import requests
+import pymysql
 
 import pandas
 
@@ -111,6 +113,25 @@ async def download_log(drone, entry, drone_num):
     await drone.log_files.download_log_file(entry, filename)
     print(f"drone {drone_num} log Download complete")
     await drone.log_files.erase_all_log_files()
+    files = open(filename, 'rb')
+    upload = {'filearg': files}
+    post_data = {"description": '', "feedback": '', "email": "", "type": "personal"}
+
+    res = requests.post('http://localhost:5006/upload', files=upload, data=post_data)
+    url = res.url
+    droneid = drone_num + 1
+
+    conn = pymysql.connect(host='125.6.40.93', user='suvlab', password='suvlab', db='suvlab', charset='utf8mb4')
+    cur = conn.cursor()
+
+    cur.execute(f"select * from log where droneid = %s", droneid)
+    row_result = cur.rowcount
+    if row_result == 1:
+        cur.execute("UPDATE log SET url = %s WHERE droneid = %s", (url, droneid))
+    else:
+        cur.execute("INSERT INTO log (droneid, url) VALUES (%s, %s)", (droneid, url))
+    conn.commit()
+    conn.close()
 
 
 async def give_random_mission(drone, drone_type, drone_num, prev_mission_group, point):
