@@ -9,3 +9,8 @@
 
 - ROS2와 관련된 msg 및 Node 
 - [build 방법](./ros2/README.md)
+
+## [shellscript](./shellscript/README.md)
+- 실행 메뉴얼 
+- 전체 시스템 실행 스크립트
+- docker run script
