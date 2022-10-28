@@ -5,7 +5,8 @@
 - [PX4-Autopilot](https://github.com/SUV-Olympiad/PX4-Autopilot)
 - [SUV-GCS](https://github.com/SUV-Olympiad/SUV-GCS)
 - [SUV-Tools](https://github.com/SUV-Olympiad/SUV-Tools)
-- 3가지 repository를 한 workspace에 clone
+- [models](https://drive.google.com/drive/folders/1iQrGri4qP_nPKJhN0nCnCg6VGx8K2sPp?usp=sharing)
+- 3가지 repository + models 한 workspace에 clone
 
 
 ### run_all.sh
