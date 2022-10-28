@@ -6,7 +6,3 @@ sh run_olympiad.sh &
 sh run_qgc1.sh &
 sh run_qgc2.sh &
 sh run_qgc3.sh &
-
-if [[ $1 == leap ]]; then
-	sh run_leap.sh &
-fi
