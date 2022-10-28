@@ -23,6 +23,9 @@
 
 ## leapmotion
 
+![leap](./images/leapmotion.gif)
+
+
 - LeapMotion을 이용하여 손의 `roll`, `pitch`, `yaw`, `height`, `grip` 전송
 - LeapMotion 데이터에 맞는 [Leap.msg](./src/suv_msgs/msg/Leap.msg) 정의
 - `python3 LeapControl.py` 로 실행
