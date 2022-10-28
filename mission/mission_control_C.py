@@ -117,7 +117,7 @@ async def download_log(drone, entry, drone_num):
     upload = {'filearg': files}
     post_data = {"description": '', "feedback": '', "email": "", "type": "personal"}
 
-    res = requests.post('http://localhost:5006/upload', files=upload, data=post_data)
+    res = requests.post('https://review.px4.io/upload', files=upload, data=post_data)
     url = res.url
     droneid = drone_num + 21
 
