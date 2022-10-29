@@ -1,3 +1,4 @@
 cd /home/suv/olympiad
 ./QGroundControl.AppImage &
-python3 SUV-Tools/mission/mission_control_A.py 7
+cd ./SUV-Tools/mission
+python3 mission_control_A.py 7
