@@ -1,6 +1,6 @@
-mission/log/A/*
-mission/log/B/*
-mission/log/C/*
+mission/log/A/*.ulog
+mission/log/B/*.ulog
+mission/log/C/*.ulog
 devel/
 logs/
 build/
