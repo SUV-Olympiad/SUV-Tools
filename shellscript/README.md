@@ -6,7 +6,9 @@
 - [SUV-GCS](https://github.com/SUV-Olympiad/SUV-GCS)
 - [SUV-Tools](https://github.com/SUV-Olympiad/SUV-Tools)
 - [models](https://drive.google.com/drive/folders/1iQrGri4qP_nPKJhN0nCnCg6VGx8K2sPp?usp=sharing)
-- 3가지 repository + models 한 workspace에 clone
+
+- 3가지 repository + models 한 `/home/$USER/olympiad`에 clone
+- working dir을 변경하고 싶은 경우 docker에 있는 모든 run_*.sh에 `-v /home/$USER/olympiad:/home/suv/olympiad` 옵션 자신이 원하는 경로로 수정
 
 
 ### run_all.sh
