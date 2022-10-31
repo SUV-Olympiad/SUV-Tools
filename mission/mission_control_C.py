@@ -101,9 +101,13 @@ async def land_disarm(drone, drone_num, drone_type, prev_mission_group, point):
             break
 
     await drone.mission_raw.clear_mission()
+    prev_mission_group = await give_random_mission(drone, drone_type, drone_num, prev_mission_group, point)
+
     entries = await drone.log_files.get_entries()
+    entries = sorted(entries, key=lambda x: x.date)
     await download_log(drone, entries[-1], drone_num)
-    return await give_random_mission(drone, drone_type, drone_num, prev_mission_group, point)
+
+    return prev_mission_group
 
 
 async def download_log(drone, entry, drone_num):
@@ -112,7 +116,7 @@ async def download_log(drone, entry, drone_num):
     print(f"drone {drone_num} Downloading: log {entry.id} from {entry.date} to {filename}")
     await drone.log_files.download_log_file(entry, filename)
     print(f"drone {drone_num} log Download complete")
-    await drone.log_files.erase_all_log_files()
+
     files = open(filename, 'rb')
     upload = {'filearg': files}
     post_data = {"description": '', "feedback": '', "email": "", "type": "personal"}
