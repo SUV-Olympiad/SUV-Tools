@@ -14,8 +14,8 @@ from mavsdk import System
 from mavsdk.mission_raw import MissionItem
 
 
-async def run(drone_num, drone_type):
-    drone = System(None, 50051+drone_num)
+async def run(drone_num):
+    drone = System(None, 50051 + drone_num)
     port = 24540 + drone_num
     print(f'Connecting to drone {drone_num} by port {port}')
     await drone.connect(system_address=f"udp://:{port}")
@@ -25,6 +25,10 @@ async def run(drone_num, drone_type):
         if state.is_connected:
             print(f"-- Connected to drone {drone_num}!")
             break
+
+    async for vtol in drone.telemetry.vtol_state():
+        drone_type = vtol.value
+        break
 
     await asyncio.sleep(1)
     point = ['A', 'B', 'C', 'D', 'E']
@@ -69,11 +73,14 @@ async def run(drone_num, drone_type):
 
     await drone.mission_raw.clear_mission()
 
-    mission_items.append(make_takeoff_mission(start_position[0], start_position[1]))
+    mission_items.append(make_takeoff_mission(start_position[0], start_position[1]) if drone_type == 0 else
+                         make_vtol_takeoff_mission(start_position[0], start_position[1]))
     mission_items.append(make_waypoint_mission(1, lat, lon))
-    mission_items.append(make_land_mission(2, lat, lon))
+    mission_items.append(make_land_mission(2, lat, lon) if drone_type == 0 else make_vtol_land_mission(2, lat, lon))
 
-    print(f"-- Uploading mission to drone {drone_num} (to point{point[dst]} line num {row} ({lat}, {lon})was at {start_point})")
+    print(
+        f"-- Uploading mission to drone {drone_num} (to point{point[dst]} line num {row} ({lat}, {lon})was at "
+        f"{start_point})")
     await drone.mission_raw.upload_mission(mission_items)
 
     async for in_air in drone.telemetry.in_air():
@@ -156,10 +163,10 @@ async def give_random_mission(drone, drone_type, drone_num, prev_mission_group, 
         takeoff_position = (float(position.latitude_deg), float(position.longitude_deg))
         break
 
-
-    mission_items.append(make_takeoff_mission(takeoff_position[0], takeoff_position[1]))
+    mission_items.append(make_takeoff_mission(takeoff_position[0], takeoff_position[1]) if drone_type == 0 else
+                         make_vtol_takeoff_mission(takeoff_position[0], takeoff_position[1]))
     mission_items.append(make_waypoint_mission(1, lat, lon))
-    mission_items.append(make_land_mission(2, lat, lon))
+    mission_items.append(make_land_mission(2, lat, lon) if drone_type == 0 else make_vtol_land_mission(2, lat, lon))
 
     print(f"-- Uploading mission to drone {drone_num} (to point{point[dst]}({lat}, {lon}) line num {row} was at {prev_mission_group})")
     await drone.mission_raw.upload_mission(mission_items)
@@ -215,6 +222,38 @@ def make_land_mission(seq, lat, lon, alt=360):
                        mission_type=0)
 
 
+def make_vtol_takeoff_mission(lat, lon, alt=360):
+    return MissionItem(seq=0,
+                       frame=0,
+                       command=84,
+                       current=1,
+                       autocontinue=1,
+                       param1=0.0,
+                       param2=1,
+                       param3=0.0,
+                       param4=float('nan'),
+                       x=int(lat * 10 ** 7),
+                       y=int(lon * 10 ** 7),
+                       z=alt,
+                       mission_type=0)
+
+
+def make_vtol_land_mission(seq, lat, lon, alt=360):
+    return MissionItem(seq=seq,
+                       frame=0,
+                       command=85,
+                       current=0,
+                       autocontinue=1,
+                       param1=2,
+                       param2=0.0,
+                       param3=float('nan'),
+                       param4=float('nan'),
+                       x=int(lat * 10 ** 7),
+                       y=int(lon * 10 ** 7),
+                       z=alt,
+                       mission_type=0)
+
+
 def is_inside(bl, tr, p):
     if bl[0] < p[0] < tr[0] and bl[1] < p[1] < tr[1]:
         return True
@@ -223,21 +262,20 @@ def is_inside(bl, tr, p):
 
 
 async def check_in_air(drone):
- async for in_air in drone.telemetry.in_air():
-     return in_air
+    async for in_air in drone.telemetry.in_air():
+        return in_air
 
 
-def main(drone_num, drone_type):
+def main(drone_num):
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(run(drone_num, drone_type))
+    loop.run_until_complete(run(drone_num))
 
 
 if __name__ == "__main__":
-    drone_type = 'iris'
     drone_num = int(sys.argv[1])
     each_case = []
     for i in range(drone_num):
-        p = Process(target=main, args=(i, drone_type, ))
+        p = Process(target=main, args=(i, ))
         each_case.append(p)
     for case in each_case:
         case.start()
